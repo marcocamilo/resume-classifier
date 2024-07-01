@@ -1,0 +1,42 @@
+[
+    {
+        "model": "LinearSVC",
+        "architecture": "default",
+        "embed_size": "n/a",
+        "learning_rate": "n/a",
+        "epochs": "n/a",
+        "optimizer": "n/a",
+        "criterion": "n/a",
+        "accuracy": 87.15
+    },
+    {
+        "model": "Feedforward Neural Network",
+        "architecture": "embed_layer->dropout->120->dropout->60->dropout->num_classes",
+        "embed_size": "60",
+        "learning_rate": "1e-3",
+        "epochs": "50",
+        "optimizer": "Adam",
+        "criterion": "CrossEntropyLoss",
+        "accuracy": 73.15 
+    },
+    {
+        "model": "Transformer",
+        "architecture": "embed_layer->encoder->linear_layer",
+        "embed_size": "80",
+        "learning_rate": "1e-3",
+        "epochs": "40",
+        "optimizer": "Adam",
+        "criterion": "CrossEntropyLoss",
+        "accuracy": 74.54
+    },
+    {
+        "model": "BERT",
+        "architecture": "bert-base-uncased->dropout->linear_layer",
+        "embed_size": "768",
+        "learning_rate": "2e-5",
+        "epochs": "10",
+        "optimizer": "Adam",
+        "criterion": "CrossEntropyLoss",
+        "accuracy": 91.67 
+    }
+]

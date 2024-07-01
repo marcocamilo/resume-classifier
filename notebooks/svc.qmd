@@ -1,0 +1,111 @@
+---
+title: Linear SVC for Resume Classification
+category: NLP
+type: Text Classification
+---
+
+### Linear SVC
+
+For this first model[^Linear Support Vector Classifier (SVC) is a classification algorithm that seeks to find the *maximum-margin hyperplane*, that is, the hyperplane that most clearly classifies observations], I train a baseline Linear SVC using the TF-IDF vectors. I then performance Latent Semantic Analysis (LSA) by applying Truncated Singular Value Decomposition (SVD)[^Truncated Singular Value Decomposition (SVD) is a dimensionality reduction technique that decomposes a matrix into three smaller matrices, retaining only the most significant features of the original matrix.] to the TF-IDF matrix in order to reduce the matrix size to a lower dimensional space and evaluate both models' performance. These models will serve as the baseline to compare the performance of more complex models in subsequent sections.
+
+> #### Takeaways
+> -   Linear SVC achieved an accuracy of 84% on the test set.
+> -   Linear SVC with Truncated SVD achieved an accuracy of 81% on the test set with only 5% of the original number of features.
+> -   The baseline model achieved a high level of accuracy and is more cost-effective when reducing the dimensionality of the feature matrix.
+
+#### Import Packages and Data
+
+Aside from standard libraries, I import two custom functions: `classifier_report` to generate a classification report and confusion matrix, and `save_performance`, which saves the performance metrics of the model to a JSON file for later analysis. I also load the pre-trained Label Encoder to label the encoded categories in upcoming plots.
+
+```{python}
+#| code-fold: false
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.svm import LinearSVC
+from sklearn.decomposition import TruncatedSVD
+import joblib
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+from src.modules.ml import classifier_report
+from src.modules.utils import save_performance
+
+# Import the data with engineered features
+df = pd.read_parquet('./data/3-processed/resume-features.parquet')
+# Label model to label categories
+le = joblib.load('./models/le-resumes.gz')
+```
+
+#### Baseline LinearSVC
+
+I split the dataset into 70% training and 30% testing sets. I use the `tfidf_vectors` column as the feature matrix and stack the vectors into a single matrix using `np.vstack`. For the target variable I set the encoded `Category` column. I extract the variables using the `.values` method, which extracts the variables into a NumPy array, improving performance. To verify the split, I print the shape of the training and testing sets.
+
+```{python}
+#| code-fold: false
+X = np.vstack(df['tfidf_vectors'].values)
+y = df['Category'].values
+
+X_train, X_test, y_train, y_test = train_test_split(X, 
+                                                    y, 
+                                                    test_size=0.30, 
+                                                    random_state=42)
+
+print(f"Training set: {X_train.shape}, {y_train.shape}")
+print(f"Testing set: {X_test.shape}, {y_test.shape}")
+```
+
+Then, I train a Linear SVC model with default hyperparameters and evaluate the model's performance using the `classifier_report` function, which generates a classification report and confusion matrix.
+
+```{python}
+svc = LinearSVC(dual="auto")
+accuracy = classifier_report([X_train, X_test, y_train, y_test], svc, le.classes_, True)
+```
+
+The model achieves an **84% accuracy** on the test set, which is already very good for a baseline model. However, TF-IDF vectors often result in sparse, high-dimensional representations with a low information ratio. To address this issue, I recur to Truncated Singular Value Decomposition (SVD).
+
+#### LinearSVC with Truncated SVD
+
+Transforming TF-IDF matrices by means of Truncated SVD is known as Latent Semantic Analysis (LSA). It takes the $n$ largest eigenvalues and transforms the original matrix to capture the most significant semantic relationships between terms and documents, while discarding noise and low-information features[^For an in depth explanation, see Manning, C.D., Raghavan, P. and Schütze, H. (2008) ‘Matrix decompositions and latent semantic indexing’, Introduction to information retrieval, 1.].
+
+I use `TruncatedSVD` to reduce the number of components to 500, which surprisingly is less than 5% of the original number of features. Below I apply the transformation and split the transformed feature matrix into training and testing sets before training the new model.
+
+```{python}
+#| code-fold: false
+t_svd = TruncatedSVD(n_components=500, algorithm='arpack')
+X_svd = t_svd.fit_transform(X)
+
+
+X_train_svd, X_test_svd, y_train_svd, y_test_svd = train_test_split(X_svd, 
+                                                                    y, 
+                                                                    test_size=0.30, 
+                                                                    random_state=42)
+
+
+print(f"Training set: {X_train_svd.shape}, {y_train_svd.shape}")
+print(f"Testing set: {X_test_svd.shape}, {y_test_svd.shape}")
+```
+
+I now train a new Linear SVC model using the SVD-transformed feature matrix and generate a classification report and confusion matrix.
+
+```{python}
+svc_svd = LinearSVC(dual="auto")
+accuracy = classifier_report([X_train_svd, X_test_svd, y_train_svd, y_test_svd], svc_svd, le.classes_, True)
+```
+
+The model achieved an **81% accuracy** on the test set, which is slightly lower than the baseline model. However, these results come from a model **trained on less than 5%** of the original number of features while still retaining a high level of accuracy. This demonstrates the sparcity of the TF-IDF vectors, while also showing that the model can still achieve an excellent level of accuracy with a substantially reduced feature matrix.
+
+Before moving onto the next model, I save the performance metrics of the baseline model for later comparison.
+
+```{python}
+#| code-fold: false
+save_performance(model_name='LinearSVC',
+                 architecture='default',
+                 embed_size='n/a',
+                 learning_rate='n/a',
+                 epochs='n/a',
+                 optimizer='n/a',
+                 criterion='n/a',
+                 accuracy=87.15
+                 )
+```
