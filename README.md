@@ -1,7 +1,7 @@
 [logo]
 
-# TITLE
-### SUBTITLE
+# BERT, Encoders and Linear Models for Resume Text Classification
+### Exploring Performance of Advanced NLP Algorithms for Text Classification
 
 ![PyTorch](https://img.shields.io/badge/pytorch-white?logo=pytorch)
 ![tensorflow](https://img.shields.io/badge/tensorflow-white?logo=tensorflow)
